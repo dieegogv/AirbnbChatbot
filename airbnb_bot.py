@@ -1,14 +1,3 @@
-#!/usr/bin/env python
-# -*- coding: utf-8 -*-
-"""airbnb_bot.py - Airbnb Messaging Bot (TOBOT)
-See README.md or https://github.com/shirosaidev/airbnbbot
-for more information.
-
-Copyright (C) Chris Park 2019
-airbnbbot is released under the Apache 2.0 license. See
-LICENSE for the full license text.
-"""
-
 from __future__ import print_function, unicode_literals
 import requests
 from bs4 import BeautifulSoup
@@ -20,7 +9,6 @@ import logging
 import os
 import sys
 import time
-#import re
 import sqlite3
 from sqlite3 import Error
 from collections import Counter
@@ -34,12 +22,10 @@ from sklearn.metrics.pairwise import cosine_similarity
 
 from config import *
 
-TOBOT_VERSION = '0.1-b.1'
-__version__ = TOBOT_VERSION
+AIRBNBOT = '0.1-b.1'
+__version__ = AIRBNBOT
 
-# set up logging
-#logging.basicConfig()
-logger = logging.getLogger(name='TOBOT')
+logger = logging.getLogger(name='AIRBNBOT')
 logger.setLevel(logging.DEBUG)
 logging.addLevelName(
         logging.INFO, "\033[1;32m%s\033[1;0m"
@@ -58,13 +44,8 @@ loglevel = logging.DEBUG
 logging.basicConfig(format=logformatter, level=loglevel)
 
 
-# Tobot "brain" data functions
-
 def read_corpus():
-    """open corpus file and create word and sentence tokens
-    corpus file is the base brain for Tobot which contains words/sentences
-    used by nltk and sklearn to help Tobot respond to questions"""
-    f = open('tobot_corpus.txt', 'r', errors='ignore')
+    f = open('AIRBNBOT_corpus.txt', 'r', errors='ignore')
     raw = f.read()
     f.close()
     raw = raw.lower()
@@ -78,17 +59,15 @@ def read_corpus():
 
 
 def db_connect():
-    """initialize the connection to the database and 
-    create required tables."""
     try:
-        connection = sqlite3.connect('tobot_db.sqlite')
+        connection = sqlite3.connect('AIRBNBOT_db.sqlite')
     except Error as e:
         print("Error! cannot create the database connection. %s" % e)
         sys.exit(1)
 
     cursor = connection.cursor()
 
-    # create the tables needed by TOBOT to store what it learns
+    #Tablas para entrenamiento
     create_table_request_list = [
         'CREATE TABLE IF NOT EXISTS words(word TEXT UNIQUE)',
         'CREATE TABLE IF NOT EXISTS sentences(sentence TEXT UNIQUE, used INT NOT NULL DEFAULT 0)',
@@ -102,8 +81,6 @@ def db_connect():
 
     return connection, cursor
 
-
-# end data functions
 
 connection, cursor = db_connect()
 sent_tokens, word_tokens = read_corpus()
@@ -298,7 +275,6 @@ class airbnbBot():
         if testing:
             return
         pass
-        #send_message(thread_id, message)
 
 
 class color:
@@ -313,10 +289,6 @@ class color:
     UNDERLINE = '\033[4m'
     END = '\033[0m'
 
-
-# language functions
-
-# standard question start words
 QUESTION_START_WORDS = (
     'who', 'what', 'when', 'where', 'why', 'how', 'is', 'can', 'does', 'do',
     'which', 'am', 'are', 'was', 'were', 'may', 'might', 'could', 'will', 'shall',
@@ -333,33 +305,20 @@ def is_question(text):
             break
     return isquestion
 
-# end language function
-
-
-# text cleaning functions
-
 def get_sentences(text):
-    """Retrieve the sentences present in a given string of text.
-    The return value is a list of sentences."""
     text = text.split('.')
     text = '. '.join(text).strip()
     sentList = nltk.sent_tokenize(text)
     return sentList
 
 def get_words(text):
-    """Retrieve the words present in a given string of text.
-    Filter out the most common and stop words.
-    The return value is a list of tuples where the first member is a lowercase word,
-    and the second member the number of time it is present in the text."""
     wordsList = nltk.word_tokenize(text)
-    # remove most common words
     fdist = nltk.probability.FreqDist(wordsList)
     most_common_words = fdist.most_common(2)
     for word, count in most_common_words:
         word = word.lower()
         if word in wordsList:
             wordsList.remove(word)
-    # remove stop words
     stop_words = nltk.corpus.stopwords.words("english")
     filtered_wordsList = []
     for word in wordsList:
@@ -368,14 +327,11 @@ def get_words(text):
             filtered_wordsList.append(word)
     wordsList = filtered_wordsList[:]
     del filtered_wordsList[:]
-    # perform lemmatization
     text = " ".join(wordsList)
     filtered_wordsList = lem_normalize(text)
     return Counter(filtered_wordsList).items()
 
 def clean_words(text):
-    """Simple text cleaner that removes all tokens that are not alphabetic
-    Returns list of clean words."""
     text = text.split('.')
     text = '. '.join(text).strip()
     words = nltk.word_tokenize(text)
@@ -390,15 +346,7 @@ def lem_normalize(text):
     remove_punct_dict = dict((ord(punct), None) for punct in string.punctuation)
     return lem_tokens(nltk.word_tokenize(text.lower().translate(remove_punct_dict)))
 
-# end text cleaning
-
-
-# database functions
-
 def get_id(entityName, text):
-    """Retrieve an entity's unique ID from the database, given its associated text.
-    If the row is not already present, it is inserted.
-    The entity can either be a sentence or a word."""
     tableName = entityName + 's'
     columnName = entityName
     cursor.execute('SELECT rowid FROM ' + tableName + ' WHERE ' + columnName + ' = ?', (text,))
@@ -410,7 +358,6 @@ def get_id(entityName, text):
         return cursor.lastrowid, False
 
 def in_database(response):
-    """Check if Tobot has the response stored in database."""
     cursor.execute('SELECT rowid FROM sentences WHERE sentence = ?', (response,))
     row = cursor.fetchone()
     if row:
@@ -419,14 +366,12 @@ def in_database(response):
         return False
 
 def train_bot(H, B):
-    """Train Tobot by adding human question and bot response into the database.
-    Store the association between the user's message words and Tobot's response"""
     if H is None and B is None:  # cli
-        H = input("Human question: ")
+        H = input("Tu pregunta: ")
         H = H.strip()
         if H == '':
             return None
-        B = input("Bot response: ")
+        B = input("Airbnbot respuesta: ")
         B = B.strip()
         if B == '':
             return None
@@ -443,7 +388,6 @@ def train_bot(H, B):
     return 'success'
 
 def brain_dump(sizeonly=False):
-    """Print what's in bot's brain (db)."""
     cursor.execute('SELECT * FROM sentences')
     rows_sent = cursor.fetchall()
     cursor.execute('SELECT * FROM words')
@@ -451,7 +395,7 @@ def brain_dump(sizeonly=False):
     cursor.execute('SELECT * FROM associations')
     rows_assoc = cursor.fetchall()
     if sizeonly:
-        return 'TOBOT: BRAIN(db) (sentences: %s, words: %s)' % (len(rows_sent), len(rows_words))
+        return 'AIRBNBOT: BRAIN(db) (sentences: %s, words: %s)' % (len(rows_sent), len(rows_words))
     else:
         if not rows_sent:
             print("sentences empty")
@@ -473,9 +417,6 @@ def brain_dump(sizeonly=False):
                 print(row)
 
 def db_lookup(H):
-    """Check if there are any matching words in the database.
-    Returns None if there is no match else a tuple with 
-    response text and confidence percent."""
     words = get_words(H)
     wordsfound = None
     for word, n in words:
@@ -486,37 +427,23 @@ def db_lookup(H):
             break
     if wordsfound is None:
         return None
-    # retrieve the most likely answer from the database
     cursor.execute('CREATE TEMPORARY TABLE results(sentence_id INT, sentence TEXT, weight REAL)')
     words_length = sum([n * len(word) for word, n in words])
     for word, n in words:
         weight = sqrt(n / float(words_length))
-        #cursor.execute('INSERT INTO results SELECT associations.sentence_id, sentences.sentence, ?*associations.weight/(4+sentences.used) FROM words INNER JOIN associations ON associations.word_id=words.rowid INNER JOIN sentences ON sentences.rowid=associations.sentence_id WHERE words.word=?', (weight, word,))
         cursor.execute('INSERT INTO results SELECT associations.sentence_id, sentences.sentence, ?*associations.weight FROM words INNER JOIN associations ON associations.word_id=words.rowid INNER JOIN sentences ON sentences.rowid=associations.sentence_id WHERE words.word=?', (weight, word,))
-    # if matches were found, give the best one
+
     cursor.execute('SELECT sentence_id, sentence, SUM(weight) AS sum_weight FROM results GROUP BY sentence_id ORDER BY sum_weight DESC LIMIT 1')
     row = cursor.fetchone()
     cursor.execute('DROP TABLE results')
-    # otherwise, just randomly pick one of the least used sentences
-    #if row is None:
-    #    cursor.execute('SELECT rowid, sentence FROM sentences WHERE used = (SELECT MIN(used) FROM sentences) ORDER BY RANDOM() LIMIT 1')
-    #    row = cursor.fetchone()
-    # tell the database the sentence has been used once more, and prepare the sentence
-    # otherwise, just return None
+   
     if row is None:
         return None
     B = row[1]
     weight = row[2]
     confidence = weight * db_weight_mult
-    #cursor.execute('UPDATE sentences SET used=used+1 WHERE rowid=?', (row[0],))
-    #connection.commit()
-    # return bot's message
+   
     return B, confidence
-
-# end database functions
-
-
-# message reply functions
 
 def format_response(response):
     response_formatted = []
@@ -528,9 +455,6 @@ def format_response(response):
     return " ".join(response_formatted)
 
 def response(user_response):
-    """Try to get best response to question using corpus file and database.
-    Returns None if confidence is 0 else returns a tuple with 
-    response text, confidence percent and which source (file/db)."""
     res_file = file_lookup(user_response)
     res_db = db_lookup(user_response)
     if res_file is not None and res_db is not None:
@@ -551,9 +475,6 @@ def response(user_response):
         return None
 
 def file_lookup(user_response):
-    """Try to get response to question using nltk and sklearn from text in corpus file.
-    Returns None if confidence is 0 else returns a tuple with 
-    response text and confidence percent."""
     tobo_response=''
     sent_tokens.append(user_response)
     TfidfVec = TfidfVectorizer(tokenizer=lem_normalize, stop_words='english')
@@ -594,10 +515,10 @@ def thanks(text):
 
 # end message reply functions
 
-def teach_tobot_user_prompt(message, resp, host_reply):
-    # train tobot by adding into database if not already
+def teach_AIRBNBOT_user_prompt(message, resp, host_reply):
+    # train AIRBNBOT by adding into database if not already
     #if not in_database(resp) or not in_database(host_reply):
-    user_response = input(color.BOLD + 'Teach TOBOT? (y/n) ' + color.END).strip()
+    user_response = input(color.BOLD + 'Teach AIRBNBOT? (y/n) ' + color.END).strip()
     user_response = user_response.lower()
 
     def teach(m, r):
@@ -675,17 +596,17 @@ def process_message(msg, new_booking):
     res = response(msg['message'])
     if res is None:
         logger.info(color.BOLD + color.YELLOW + "Sorry I don't know how to answer, please train me more." + color.END + color.END)
-        # TOBOT doesn't know how to answer, so send a generic message
+        # AIRBNBOT doesn't know how to answer, so send a generic message
         #reply = "Hello %s, I'll get back to you shortly." % msg['guest_name']
         #logger.info("Sending reply " + reply)
         #bot.send_reply(reply, msg['thread_id'])
         bot.reply_count_noresponse += 1
         if training and host_replied:
-            teach_tobot_user_prompt(msg['message'], None, msg['host_reply'])
-        # TOBOT could not find a response so continue
+            teach_AIRBNBOT_user_prompt(msg['message'], None, msg['host_reply'])
+        # AIRBNBOT could not find a response so continue
         return
     resp, confidence, source = res
-    # TOBOT found a response
+    # AIRBNBOT found a response
     logger.info(color.BOLD + 'I found a response! (confidence: ' + str(confidence) + ' (' + source + '))' + color.END)
     if confidence < confidence_req:
         # confidence of response too low so continue
@@ -694,9 +615,9 @@ def process_message(msg, new_booking):
         logger.info(color.BOLD + color.YELLOW + 'Sorry my confidence is too low to send reply. Please train me more.' + color.END + color.END)
         bot.reply_count_noresponse += 1
         if training and host_replied:
-            teach_tobot_user_prompt(msg['message'], resp, msg['host_reply'])
+            teach_AIRBNBOT_user_prompt(msg['message'], resp, msg['host_reply'])
         elif training:
-            teach_tobot_user_prompt(msg['message'], resp, None)
+            teach_AIRBNBOT_user_prompt(msg['message'], resp, None)
         return
     # format reply and send
     reply = "Hello %s, %s" % (msg['guest_name'], resp)
@@ -711,57 +632,42 @@ def process_message(msg, new_booking):
         bot.message_count_processed += 1
 
 
-def output_banner():
-    c = random.choice((color.PURPLE, color.CYAN, color.YELLOW, color.RED))
-    banner = """%s
-
-     .===./`
-    /.n n.\\      __________  ____  ____  ______     
-    "\\_=_/"     /_  __/ __ \/ __ )/ __ \/_  __/    
-  (m9\\:::/\\      / / / / / / __  / / / / / / 
-     /___\\6     / / / /_/ / /_/ / /_/ / / /  
-     [] []     /_/  \____/_____/\____/ /_/ v%s  
-    /:] [:\\        Airbnb Messaging Bot
-
-    %s""" % (c, TOBOT_VERSION, color.END)
-    print(banner)
 
 
 if __name__ == '__main__':
-    output_banner()
 
     logger.info('Starting up.. (training: %s, testing: %s)' % (training, testing))
 
     # check env vars
     try:
-        USERNAME = os.environ['TOBOT_USERNAME']
+        USERNAME = os.environ['AIRBNBOT_USERNAME']
     except KeyError:
         USERNAME = airbnb_username
     if USERNAME is None or USERNAME == '':
-        logger.info('No TOBOT_USERNAME in env or config, exiting..')
+        logger.info('No AIRBNBOT_USERNAME')
         sys.exit(0)
     try:
-        PASSWORD = os.environ['TOBOT_PASSWORD']
+        PASSWORD = os.environ['AIRBNBOT_PASSWORD']
     except KeyError:
         PASSWORD = airbnb_password
     if PASSWORD is None or PASSWORD == '':
-        logger.info('No TOBOT_PASSWORD in env or config, exiting..')
+        logger.info('No AIRBNBOT_PASSWORD')
         sys.exit(0)
     try:
-        APIKEY = os.environ['TOBOT_APIKEY']
+        APIKEY = os.environ['AIRBNBOT_APIKEY']
     except KeyError:
         APIKEY = airbnb_apikey
     if APIKEY == '':
         APIKEY = None
     try:
-        OAUTHTOKEN = os.environ['TOBOT_OAUTHTOKEN']
+        OAUTHTOKEN = os.environ['AIRBNBOT_OAUTHTOKEN']
     except KeyError:
         OAUTHTOKEN = airbnb_oauthtoken
     if OAUTHTOKEN == '':
         OAUTHTOKEN = None
 
     if APIKEY is None:
-        logger.info('No TOBOT_APIKEY in env, do you want me to get it?')
+        logger.info('No AIRBNBOT_APIKEY')
         user_response = input('(y/n) ').strip()
         user_response = user_response.lower()
         if user_response == 'y':
@@ -770,26 +676,26 @@ if __name__ == '__main__':
             password=PASSWORD
             )
             APIKEY = bot.api_key()
-            os.environ['TOBOT_APIKEY'] = APIKEY
+            os.environ['AIRBNBOT_APIKEY'] = APIKEY
         else:
-            logger.info('No TOBOT_APIKEY in env or config, exiting..')
+            logger.info('No AIRBNBOT_APIKEY')
             sys.exit(0)
 
     if OAUTHTOKEN is None:
-        logger.info('No TOBOT_OAUTHTOKEN in env, do you want me to get it?')
+        logger.info('No AIRBNBOT_OAUTHTOKEN')
         user_response = input('(y/n) ').strip()
         user_response = user_response.lower()
         if user_response == 'y':
-            print(color.BOLD + color.YELLOW + "WARNING: DON'T GET OAUTHTOKEN TOO OFTEN!" + color.END + color.END)
+            print(color.BOLD + color.YELLOW + "WARNING: DON'T GET OAUTHTOKEN" + color.END + color.END)
             bot = airbnbBot(
             username=USERNAME,
             password=PASSWORD,
             apikey=APIKEY
             )
             OAUTHTOKEN = bot.oauth_token()
-            os.environ['TOBOT_OAUTHTOKEN'] = OAUTHTOKEN
+            os.environ['AIRBNBOT_OAUTHTOKEN'] = OAUTHTOKEN
         else:
-            logger.info('No TOBOT_OAUTHTOKEN in env or config, exiting..')
+            logger.info('No AIRBNBOT_OAUTHTOKEN')
             sys.exit(0)
 
     logger.info('APIKEY: ' + APIKEY)
@@ -801,12 +707,10 @@ if __name__ == '__main__':
         apikey=APIKEY,
         oauthtoken=OAUTHTOKEN
         )
-
-    # output size of bot's brain
-    print(color.BOLD + color.PURPLE + 'TOBOT: BRAIN(file) (sentences: ' + str(len(sent_tokens)) + ', words: ' + str(len(word_tokens)) + ')' + color.END + color.END)
+    print(color.BOLD + color.PURPLE + 'AIRBNBOT: BRAIN(file) (sentences: ' + str(len(sent_tokens)) + ', words: ' + str(len(word_tokens)) + ')' + color.END + color.END)
     print(color.BOLD + color.PURPLE + brain_dump(sizeonly=True) + color.END + color.END)
     
-    print(color.BOLD + color.DARKCYAN + "TOBOT: My name is Tobot. I will answer your guest's questions and help send messages for you. If you want to exit press ctrl+c.." + color.END + color.END)
+    print(color.BOLD + color.DARKCYAN + "AIRBNBOT: Mi nombre es AIRBNBOT. Responderé tus preguntas, para salir presiona ctrl+c.." + color.END + color.END)
     while True:
         try:
             logger.info(color.BOLD + 'Checking for messages in hosting inbox..' + color.END)
@@ -854,19 +758,14 @@ if __name__ == '__main__':
                     msg['num_guests'] = message['inquiry_number_of_guests']
                 except KeyError:
                     msg['num_guests'] = message['inquiry_listing']['inquiry_number_of_guests']
-                # end parse message
-                # check if message has already been processed
                 if msg['thread_id'] in bot.message_ids:
                     continue
                 logger.debug(msg)
-                # check if this is a new pending booking request or cancelled booking and 
-                # skip message since we want to review
                 if msg['status'] == 'pending' or msg['status'] == 'cancelled':
                     logger.info(color.BOLD + color.YELLOW + "This is a " + msg['status'] + " booking request, skipping.." + color.END + color.END)
                     bot.message_count += 1
                     bot.message_ids.append(msg['thread_id'])
                     continue
-                # check if this is the guest's check out day and send check out message
                 date_today = datetime.strftime(datetime.now(), '%Y-%m-%d')
                 if not training and send_checkout_msg and msg['checkout_date'] == date_today and datetime.now().hour >= 11:
                     logger.info(color.BOLD + color.YELLOW + "Guest checks out today, sending checkout message" + color.END + color.END)
@@ -878,14 +777,11 @@ if __name__ == '__main__':
                     continue
                 bot.message_count += 1
                 bot.message_ids.append(msg['thread_id'])
-                # get message thread for guest
                 mt = bot.get_message_thread(msg['thread_id'])
                 if mt is None:
                     logger.info(color.BOLD + color.RED + 'Error getting message thread' + color.END + color.END)
                     continue
                 posts_count = len(mt['posts'])
-                # build a conversation list which cotains lists with any guest questions
-                # and corresponding host responses
                 new_booking = False
                 guest_post_count = 0
                 host_post_count = 0
@@ -911,7 +807,6 @@ if __name__ == '__main__':
                 if host_post_count == 0:
                     new_booking = True
                 if not training:
-                    #print(conversations)
                     guest_post = ' '.join(conversations[-1][0])
                     msg['message'] = guest_post.lower()
                     if len(conversations[-1][1]) > 0:
@@ -922,11 +817,9 @@ if __name__ == '__main__':
                     if msg['message']:
                         process_message(msg, new_booking)
                 else:
-                    # remove beginning conversation with guest greeting and host check in instructions
                     conversations.pop(0)
                     if len(conversations) == 0:
                         continue
-                    # remove ending conversation if checkout day has passed
                     checkout_date = msg['checkout_date'].split('-')
                     checkout_date = datetime(int(checkout_date[0]), int(checkout_date[1]), int(checkout_date[2]))
                     if datetime.now() >= checkout_date:
@@ -934,7 +827,7 @@ if __name__ == '__main__':
                     if len(conversations) == 0:
                         continue
                     #print(conversations)
-                    # loop through all the conversations to train Tobot from past discussions
+                    # loop through all the conversations to train AIRBNBOT from past discussions
                     # with guest and host reply
                     for conv in conversations:
                         guest_post = ' '.join(conv[0])
@@ -948,4 +841,4 @@ if __name__ == '__main__':
             continue
         except KeyboardInterrupt:
             break
-    print(color.BOLD + "TOBOT: Sayonara! take care.." + color.END)
+    print(color.BOLD + "AIRBNBOT: Adiós! Cuidado..." + color.END)

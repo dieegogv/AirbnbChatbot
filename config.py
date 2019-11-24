@@ -1,17 +1,17 @@
-# Airbnb login username, can be set here or as env var TOBOT_USERNAME
+# Airbnb login username, can be set here or as env var AIRBNBOT_USERNAME
 airbnb_username = ""
-# Airbnb login password, can be set here or as env var TOBOT_PASSWORD
+# Airbnb login password, can be set here or as env var AIRBNBOT_PASSWORD
 airbnb_password = ""
-# Airbnb api key, can be set here or as env var TOBOT_APIKEY
+# Airbnb api key, can be set here or as env var AIRBNBOT_APIKEY
 airbnb_apikey = ""
-# Airbnb OAUTH token, can be set here or as env var TOBOT_OAUTHTOKEN
+# Airbnb OAUTH token, can be set here or as env var AIRBNBOT_OAUTHTOKEN
 airbnb_oauthtoken = ""
-# training mode; gets last 50 messages (including read) and prompts user to teach Tobot from 
+# training mode; gets last 50 messages (including read) and prompts user to teach AIRBNBOT from 
 # past converations from guest and host replies
 training = True
 # testing mode; don't send replies, just ouput what would be done
 testing = True
-# confidence level required for Tobot to auto-reply and send messages
+# confidence level required for AIRBNBOT to auto-reply and send messages
 confidence_req = 0.21
 # database weight multiplier (confidence %)
 db_weight_mult = 1.3
@@ -20,10 +20,10 @@ db_weight_mult = 1.3
 useragent="Mozilla/5.0 (Macintosh; Intel Mac OS X 10_11_6) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/71.0.3578.98 Safari/537.36"
 # mark messages as read
 markread = False
-# languages that Tobot does not send a reply asking to send messages in English
+# languages that AIRBNBOT does not send a reply asking to send messages in English
 # only English (en) is processed, any other language is this list is skipped (no reply)
 # example if you are co-hosting and one of your co-host understands Japanese (ja), you could add to this
-# list and Tobot won't reply asking to send in English if you have a Japanese guest writing in ja
+# list and AIRBNBOT won't reply asking to send in English if you have a Japanese guest writing in ja
 allowed_languages = ['en', 'ja']
 # default responses
 # message to send to guests who don't write messages in one or our allowed languages list
