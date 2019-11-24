@@ -1,19 +1,7 @@
-#!/usr/bin/env python
-# -*- coding: utf-8 -*-
-"""tobot_brain_cli.py - Airbnb Messaging Bot (TOBOT)
-See README.md or https://github.com/shirosaidev/airbnbbot
-for more information.
-
-Copyright (C) Chris Park 2019
-airbnbbot is released under the Apache 2.0 license. See
-LICENSE for the full license text.
-"""
-
 import sqlite3
 from airbnb_bot import read_corpus, db_connect, brain_dump, output_banner, train_bot, response, color
 from config import confidence_req
 
-output_banner()
 
 def output_commands():
     print("""
@@ -25,15 +13,14 @@ def output_commands():
     testbot          looks up response in database to question
     """)
 
-# simple cli for Tobot's brain
-print("Loading TOBOT's brain..")
+print("Cargando airbnBot..")
 sent_tokens, word_tokens = read_corpus()
 connection, cursor = db_connect()
-print("Done.")
-print("TOBOT CLI; type ? or help for commands, quit or bye to exit.")
+print("hecho.")
+print("Presiona ? para ayura.")
 while True:
     try:
-        user_response = input(color.DARKCYAN + 'TOBOT> ' + color.END).strip()
+        user_response = input(color.DARKCYAN + 'AIRBNBOT> ' + color.END).strip()
         if user_response in ['quit', 'bye', 'exit']:
             break
         elif user_response in ['?', 'help']:
@@ -55,13 +42,13 @@ while True:
             res = response(h)
             if res is not None:
                 resp, confidence, source = res
-                print("TOBOT Reply: " + resp + " (confidence: %s (%s))" % (confidence, source))
+                print("AIRBNBOT Respuesta: " + resp + " (confidence: %s (%s))" % (confidence, source))
                 if confidence < confidence_req:
-                    print("TOBOT: confidence too low to send reply, need more training")
+                    print("AIRBNBOT: respondo demasiado lento, necesito más entrenamiento")
             else:
-                print("TOBOT Reply: no response found, need more training")
+                print("AIRBNBOT Respuesta: Necesito más entrenamiento")
         else:
-            print("Sorry, I don't understand, type help or ? to see all commands")
+            print("Disculpa, no entendí escribe help o ? para ayuda")
     except KeyboardInterrupt:
         break
 print("Sayonara..")
